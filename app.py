@@ -1,12 +1,10 @@
-"""Flask Login Example and instagram fallowing find"""
-
 from flask import Flask, url_for, render_template, flash, request, redirect, session,logging,request
 from flask_sqlalchemy import SQLAlchemy
 
 
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///test.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = ''
 db = SQLAlchemy(app)
 
 
@@ -14,11 +12,23 @@ class User(db.Model):
 	""" Create user table"""
 	id = db.Column(db.Integer, primary_key=True)
 	username = db.Column(db.String(80), unique=True)
-	password = db.Column(db.String(80))
+	firstname = db.Column(db.String(80), unique=False)
+	lastname = db.Column(db.String(80), unique=False)
+	email = db.Column(db.String(120), unique=True)
+	dob = db.Column(db.Date, nullable=False)
+	password = db.Column(db.String(255), nullable=False)
+	contact = db.Column(db.String(20))
+	
 
-	def __init__(self, username, password):
+	def __init__(self, username, password, firstname, lastname, email, dob, contact):
 		self.username = username
 		self.password = password
+		self.firstname = firstname
+		self.lastname = lastname
+		self.contact = contact
+		self.email = email
+		self.dob = dob
+
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -45,17 +55,24 @@ def login():
 			data = User.query.filter_by(username=name, password=passw).first()
 			if data is not None:
 				session['logged_in'] = True
+				session['username'] = data.username
+				session['firstname'] = data.firstname
+				session['lastname'] = data.lastname
+				session['contact'] = data.contact
+				session['email'] = data.email
+				session['dob'] = data.dob.strftime('%Y-%m-%d')
 				return redirect(url_for('home'))
 			else:
 				return 'Incorrect Login'
-		except:
+		except Exception as e:
+			print(e)
 			return "Incorrect Login"
 
 @app.route('/register/', methods=['GET', 'POST'])
 def register():
 	"""Register Form"""
 	if request.method == 'POST':
-		new_user = User(username=request.form['username'], password=request.form['password'])
+		new_user = User(username=request.form['username'], password=request.form['password'], email=request.form['email'], dob=request.form['dob'], contact=request.form['contact'], firstname=request.form['firstname'], lastname=request.form['lastname'])
 		db.session.add(new_user)
 		db.session.commit()
 		return render_template('login.html')
@@ -64,6 +81,7 @@ def register():
 @app.route("/logout")
 def logout():
 	"""Logout Form"""
+	print("logout")
 	session['logged_in'] = False
 	return redirect(url_for('home'))
 
